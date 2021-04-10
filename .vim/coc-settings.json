@@ -1,0 +1,8 @@
+{
+	"python.linting.enabled": true,
+	"python.linting.pylintEnabled": true,
+	"python.jediEnabled": true,
+	"python.linting.mypyEnabled": true,
+	"python.formatting.provider": "black",
+	"python.pythonPath": "~/.cache/pypoetry/virtualenvs/minimoore-UdVFWqJf-py3.8"
+}
