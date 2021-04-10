@@ -10,7 +10,7 @@ StateT = int
 StatesT = Set[StateT]
 
 
-class FiniteTransducer(Generic[InputSymT, OutputSymT]):
+class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
     """Superclass of a finite transducer.
 
     States are contiguous integers from 0 to n_states -1.
@@ -47,7 +47,11 @@ class FiniteTransducer(Generic[InputSymT, OutputSymT]):
         return state is not None and 0 <= state < self.n_states
 
     @abstractmethod
-    def step(self, state: StateT, symbol: InputSymT) -> Set[Tuple[StateT, OutputSymT]]:
+    def step(
+        self,
+        state: StateT,
+        symbol: InputSymT,
+    ) -> Set[Tuple[StateT, OutputSymT]]:
         """Process one input from a state.
 
         :param state: first state.
@@ -73,7 +77,11 @@ class FiniteDetTransducer(FiniteTransducer[InputSymT, OutputSymT]):
         super().set_initial(state)
         self.init_state = state
 
-    def det_step(self, state: StateT, symbol: InputSymT) -> Tuple[StateT, OutputSymT]:
+    def det_step(
+        self,
+        state: StateT,
+        symbol: InputSymT,
+    ) -> Tuple[StateT, OutputSymT]:
         """Deterministic step.
 
         :param state: first state.

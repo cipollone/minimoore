@@ -1,2 +1,7 @@
+# Python
+__pycache__/
+*.pyc
 
+# Vim
 /Session.vim
+.*.sw[po]

@@ -1,23 +1,29 @@
 """Moore machine."""
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Set, Tuple
 
-from minimoore.transducers import FiniteDetTransducer, OutputSymT, StateT
+from minimoore.transducers import (FiniteDetTransducer, InputSymT, OutputSymT,
+                                   StateT)
 
 
-class MooreDetMachine(FiniteDetTransducer):
+TransitionT = Tuple[StateT, InputSymT, StateT]
+
+
+class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
     """Deterministic Moore Machine."""
 
     def __init__(self):
         """Initialize."""
         super().__init__()
 
-        # Locals
+        # Store
         self.__output_table: Dict[StateT, Optional[OutputSymT]] = dict()
+        self.__transitions: Dict[StateT, Dict[InputSymT, TransitionT]] = dict()
 
     def _register_state(self, state: StateT):
         """Ops on the new state."""
         self.__output_table[state] = None
+        self.__transitions[state] = dict()
 
     def set_state_output(self, state: StateT, output: OutputSymT):
         """Assign an output symbol to a state."""
@@ -30,13 +36,35 @@ class MooreDetMachine(FiniteDetTransducer):
         self.set_state_output(state, output)
         return state
 
+    def new_transition(
+        self,
+        state1: StateT,
+        symbol: InputSymT,
+        state2: StateT,
+    ):
+        """Add a new transition between esisting states."""
+        assert self.is_state(state1)
+        assert self.is_state(state2)
+        transition = (state1, symbol, state2)
+        self.__transitions[state1][symbol] = transition
+
     def output_fn(self, state: StateT) -> OutputSymT:
         """Outputs are associated to states.
 
         :param state: input state.
         :return: output symbol.
         """
-        assert self.is_state(state)
         output = self.__output_table[state]
         assert output is not None, f"Output not assigned for state {state}"
         return output
+
+    def step(
+        self,
+        state: StateT,
+        symbol: InputSymT,
+    ) -> Set[Tuple[StateT, OutputSymT]]:
+        """Process one input (see super)."""
+        assert self.is_state(state)
+        _, _, state2 = self.__transitions[state][symbol]
+        output_symbol = self.output_fn(state)  # Output from current state
+        return {(state2, output_symbol)}
