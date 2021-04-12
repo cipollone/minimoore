@@ -1,6 +1,9 @@
 """Moore machine."""
 
+from pathlib import Path
 from typing import Dict, Iterable, Optional, Set, Tuple
+
+from graphviz import Digraph  # type: ignore
 
 from minimoore.transducers import (
     FiniteDetTransducer,
@@ -83,3 +86,27 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         for state, arcs in self.__transitions.items():
             for symbol, transition in arcs.items():
                 yield transition
+
+    def save_graphviz(self, out_path: Path):
+        """Save a graph to out_path using graphviz."""
+        # Create an empty graph
+        graph = Digraph(name="MooreMachine")
+
+        # Create states
+        for state in self.states():
+            output_sym = self.output_fn(state)
+            label = f"{state}: {output_sym}"
+            graph.node(str(state), label, root=str(state == self.init_state))
+
+        # Add arcs
+        for transition in self.transitions():
+            state1, input_sym, state2 = transition
+            graph.edge(str(state1), str(state2), label=str(input_sym))
+
+        # Add an arrow for the initial state
+        graph.node("init", shape="plaintext")
+        graph.edge("init", str(self.init_state))
+
+        # Save
+        out_path = out_path.with_suffix(".dot")
+        graph.render(filename=out_path)

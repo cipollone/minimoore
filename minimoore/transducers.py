@@ -1,6 +1,7 @@
 """Interfaces for finite transducers."""
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Generic, Iterable, Optional, Sequence, Set, Tuple, TypeVar
 
 # Types
@@ -77,6 +78,10 @@ class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
     def transitions(self) -> Iterable[TransitionT]:
         """Return an iterable on all transitions."""
         pass
+
+    def save_graphviz(self, out_path: Path):
+        """Save a graph to out_path using graphviz."""
+        raise NotImplementedError("Should be overridden in subclasses")
 
 
 class FiniteDetTransducer(FiniteTransducer[InputSymT, OutputSymT]):
