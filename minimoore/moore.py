@@ -56,6 +56,10 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         assert output is not None, f"Output not assigned for state {state}"
         return output
 
+    def is_arc(self, state: StateT, symbol: InputSymT):
+        """Check whether a transition exists from a node."""
+        return symbol in self.__transitions[state]
+
     def step(
         self,
         state: StateT,
@@ -63,6 +67,9 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
     ) -> Set[Tuple[StateT, OutputSymT]]:
         """Process one input (see super)."""
         assert self.is_state(state)
-        _, _, state2 = self.__transitions[state][symbol]
-        output_symbol = self.output_fn(state)  # Output from current state
-        return {(state2, output_symbol)}
+        arcs = set()
+        if self.is_arc(state, symbol):
+            _, _, state2 = self.__transitions[state][symbol]
+            output_symbol = self.output_fn(state)  # Output from current state
+            arcs.add((state2, output_symbol))
+        return arcs

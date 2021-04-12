@@ -54,8 +54,14 @@ class TestMooreDetMachine:
         assert m.step(0, "in1") == {(1, "a")}
         assert m.step(2, "in3") == {(2, "word")}
 
-        # TODO: missing arc?
-
         ret = m.process_word(["in1", "in2", "in3", "in3", "in3"])
-        ret = " ".join(ret)
-        assert ret == "a long word word word"
+        assert " ".join(ret) == "a long word word word"
+
+        # Missing arcs
+        assert not m.is_arc(2, "err")
+
+        in_word = ["in1", "in2", "err", "err"]
+        with pytest.raises(ValueError):
+            m.process_word(in_word, strict=True)
+        ret = m.process_word(in_word, strict=False)
+        assert " ".join(ret) == "a long"
