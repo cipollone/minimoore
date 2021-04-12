@@ -2,9 +2,7 @@
 
 from typing import Dict, Optional, Set, Tuple
 
-from minimoore.transducers import (FiniteDetTransducer, InputSymT, OutputSymT,
-                                   StateT)
-
+from minimoore.transducers import FiniteDetTransducer, InputSymT, OutputSymT, StateT
 
 TransitionT = Tuple[StateT, InputSymT, StateT]
 

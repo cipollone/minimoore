@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 
+# Packaging
+/.tox/
+
 # Vim
 /Session.vim
 .*.sw[po]
