@@ -9,6 +9,8 @@ OutputSymT = TypeVar("OutputSymT")
 StateT = int
 StatesT = Set[StateT]
 
+# TODO: complete arcs
+
 
 class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
     """Superclass of a finite transducer.
@@ -25,6 +27,7 @@ class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
         """Create a new state and return the id."""
         state = self.n_states
         self.n_states += 1
+        self._register_state(state)
         return state
 
     @abstractmethod
