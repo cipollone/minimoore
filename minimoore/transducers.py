@@ -1,13 +1,14 @@
 """Interfaces for finite transducers."""
 
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, Sequence, Set, Tuple, TypeVar
+from typing import Generic, Iterable, Optional, Sequence, Set, Tuple, TypeVar
 
 # Types
 InputSymT = TypeVar("InputSymT")
 OutputSymT = TypeVar("OutputSymT")
 StateT = int
 StatesT = Set[StateT]
+TransitionT = Tuple[StateT, InputSymT, StateT]
 
 
 class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
@@ -48,8 +49,8 @@ class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
         return state is not None and 0 <= state < self.n_states
 
     @abstractmethod
-    def is_arc(self, state: StateT, symbol: InputSymT):
-        """Return true if at least one transition is defined from state for symbol."""
+    def arcs_from(self, state: StateT) -> Set[InputSymT]:
+        """Return the set of input symbols that can be read from a state."""
         pass
 
     @abstractmethod
@@ -66,6 +67,15 @@ class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
             nondeterminism. If a transition is not defined, the set can be
             empty.
         """
+        pass
+
+    def states(self) -> Iterable[StateT]:
+        """Return an iterable on the states."""
+        return range(self.n_states)
+
+    @abstractmethod
+    def transitions(self) -> Iterable[TransitionT]:
+        """Return an iterable on all transitions."""
         pass
 
 
@@ -97,7 +107,7 @@ class FiniteDetTransducer(FiniteTransducer[InputSymT, OutputSymT]):
         :return: (next_state, output_symbol) or None if no transition exists.
         """
         assert self.is_state(state)
-        if not self.is_arc(state, symbol):
+        if symbol not in self.arcs_from(state):
             return None
 
         transitions = self.step(state, symbol)

@@ -1,10 +1,14 @@
 """Moore machine."""
 
-from typing import Dict, Optional, Set, Tuple
+from typing import Dict, Iterable, Optional, Set, Tuple
 
-from minimoore.transducers import FiniteDetTransducer, InputSymT, OutputSymT, StateT
-
-TransitionT = Tuple[StateT, InputSymT, StateT]
+from minimoore.transducers import (
+    FiniteDetTransducer,
+    InputSymT,
+    OutputSymT,
+    StateT,
+    TransitionT,
+)
 
 
 class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
@@ -56,9 +60,9 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         assert output is not None, f"Output not assigned for state {state}"
         return output
 
-    def is_arc(self, state: StateT, symbol: InputSymT):
-        """Check whether a transition exists from a node."""
-        return symbol in self.__transitions[state]
+    def arcs_from(self, state: StateT) -> Set[InputSymT]:
+        """Return the set of input symbols that can be read from a state."""
+        return set(self.__transitions[state].keys())
 
     def step(
         self,
@@ -68,8 +72,14 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         """Process one input (see super)."""
         assert self.is_state(state)
         arcs = set()
-        if self.is_arc(state, symbol):
+        if symbol in self.arcs_from(state):
             _, _, state2 = self.__transitions[state][symbol]
             output_symbol = self.output_fn(state)  # Output from current state
             arcs.add((state2, output_symbol))
         return arcs
+
+    def transitions(self) -> Iterable[TransitionT]:
+        """Return an iterable on all transitions."""
+        for state, arcs in self.__transitions.items():
+            for symbol, transition in arcs.items():
+                yield transition

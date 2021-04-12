@@ -58,10 +58,32 @@ class TestMooreDetMachine:
         assert " ".join(ret) == "a long word word word"
 
         # Missing arcs
-        assert not m.is_arc(2, "err")
+        assert "err" not in m.arcs_from(2)
 
         in_word = ["in1", "in2", "err", "err"]
         with pytest.raises(ValueError):
             m.process_word(in_word, strict=True)
         ret = m.process_word(in_word, strict=False)
         assert " ".join(ret) == "a long"
+
+    def test_iteration(self):
+        """Test iterations."""
+        m = MooreDetMachine[str, str]()
+        m.new_state()
+        m.new_state()
+        m.new_state()
+
+        m.new_transition(0, "in1", 1)
+        m.new_transition(1, "in2", 2)
+        m.new_transition(2, "in3", 2)
+        m.new_transition(2, "in1", 0)
+
+        count = 0
+        for state in m.states():
+            count += 1
+        assert count == 3
+
+        count = 0
+        for transition in m.transitions():
+            count += 1
+        assert count == 4
