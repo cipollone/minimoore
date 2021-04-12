@@ -1,10 +1,17 @@
 """Moore machine."""
 
-from typing import Dict, Optional, Set, Tuple
+from pathlib import Path
+from typing import Dict, Iterable, Optional, Set, Tuple
 
-from minimoore.transducers import FiniteDetTransducer, InputSymT, OutputSymT, StateT
+from graphviz import Digraph  # type: ignore
 
-TransitionT = Tuple[StateT, InputSymT, StateT]
+from minimoore.transducers import (
+    FiniteDetTransducer,
+    InputSymT,
+    OutputSymT,
+    StateT,
+    TransitionT,
+)
 
 
 class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
@@ -56,9 +63,9 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         assert output is not None, f"Output not assigned for state {state}"
         return output
 
-    def is_arc(self, state: StateT, symbol: InputSymT):
-        """Check whether a transition exists from a node."""
-        return symbol in self.__transitions[state]
+    def arcs_from(self, state: StateT) -> Set[InputSymT]:
+        """Return the set of input symbols that can be read from a state."""
+        return set(self.__transitions[state].keys())
 
     def step(
         self,
@@ -68,8 +75,38 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         """Process one input (see super)."""
         assert self.is_state(state)
         arcs = set()
-        if self.is_arc(state, symbol):
+        if symbol in self.arcs_from(state):
             _, _, state2 = self.__transitions[state][symbol]
             output_symbol = self.output_fn(state)  # Output from current state
             arcs.add((state2, output_symbol))
         return arcs
+
+    def transitions(self) -> Iterable[TransitionT]:
+        """Return an iterable on all transitions."""
+        for state, arcs in self.__transitions.items():
+            for symbol, transition in arcs.items():
+                yield transition
+
+    def save_graphviz(self, out_path: Path):
+        """Save a graph to out_path using graphviz."""
+        # Create an empty graph
+        graph = Digraph(name="MooreMachine")
+
+        # Create states
+        for state in self.states():
+            output_sym = self.output_fn(state)
+            label = f"{state}: {output_sym}"
+            graph.node(str(state), label, root=str(state == self.init_state))
+
+        # Add arcs
+        for transition in self.transitions():
+            state1, input_sym, state2 = transition
+            graph.edge(str(state1), str(state2), label=str(input_sym))
+
+        # Add an arrow for the initial state
+        graph.node("init", shape="plaintext")
+        graph.edge("init", str(self.init_state))
+
+        # Save
+        out_path = out_path.with_suffix(".dot")
+        graph.render(filename=out_path)
