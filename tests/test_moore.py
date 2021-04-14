@@ -79,11 +79,28 @@ class TestMooreDetMachine:
         m.new_transition(2, "in1", 0)
 
         count = 0
-        for state in m.states():
+        for state in m.states:
             count += 1
         assert count == 3
 
         count = 0
-        for transition in m.transitions():
+        for transition in m.transitions:
             count += 1
         assert count == 4
+
+    def test_partitions(self):
+        """Test output partitions."""
+        m = MooreDetMachine[str, str]()
+        m.new_state_output("a")
+        m.new_state_output("b")
+        m.new_state_output("c")
+
+        # Test partitions
+        assert m._output_partitions() == {
+            frozenset({0}), frozenset({1}), frozenset({2}),
+        }
+        m.new_state_output("c")
+        m.new_state_output("b")
+        assert m._output_partitions() == {
+            frozenset({0}), frozenset({1, 4}), frozenset({2, 3}),
+        }

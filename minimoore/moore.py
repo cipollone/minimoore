@@ -1,7 +1,7 @@
 """Moore machine."""
 
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Set, Tuple
+from typing import Dict, FrozenSet, Iterable, Optional, Set, Tuple
 
 from graphviz import Digraph  # type: ignore
 
@@ -81,8 +81,9 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
             arcs.add((state2, output_symbol))
         return arcs
 
+    @property
     def transitions(self) -> Iterable[TransitionT]:
-        """Return an iterable on all transitions."""
+        """An iterable on all transitions."""
         for state, arcs in self.__transitions.items():
             for symbol, transition in arcs.items():
                 yield transition
@@ -93,13 +94,13 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         graph = Digraph(name="MooreMachine")
 
         # Create states
-        for state in self.states():
+        for state in self.states:
             output_sym = self.output_fn(state)
             label = f"{state}: {output_sym}"
             graph.node(str(state), label, root=str(state == self.init_state))
 
         # Add arcs
-        for transition in self.transitions():
+        for transition in self.transitions:
             state1, input_sym, state2 = transition
             graph.edge(str(state1), str(state2), label=str(input_sym))
 
@@ -110,3 +111,26 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         # Save
         out_path = out_path.with_suffix(".dot")
         graph.render(filename=out_path)
+
+    def minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+        """Return a new minimized transducer equivalent to this.
+
+        This function implements the Hopcroft minimization algorithm for automata.
+        The implementation is based on the description in:
+        http://arxiv.org/abs/1010.5318.
+        """
+        pass
+
+    def _output_partitions(self) -> Set[FrozenSet[StateT]]:
+        """Return a partition of states based on the output function.
+
+        If two states have the same output associated, they will be in the
+        same class.
+        :return: a complete partition of states.
+        """
+        partitions_map: Dict[OutputSymT, Set[StateT]] = dict()
+        for state in self.states:
+            out = self.output_fn(state)
+            states_class = partitions_map.setdefault(out, set())
+            states_class.add(state)
+        return {frozenset(states) for states in partitions_map.values()}

@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Generic, Iterable, Optional, Sequence, Set, Tuple, TypeVar
 
+
 # Types
 InputSymT = TypeVar("InputSymT")
 OutputSymT = TypeVar("OutputSymT")
@@ -70,8 +71,9 @@ class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
         """
         pass
 
+    @property
     def states(self) -> Iterable[StateT]:
-        """Return an iterable on the states."""
+        """An iterable on states."""
         return range(self.n_states)
 
     @abstractmethod
