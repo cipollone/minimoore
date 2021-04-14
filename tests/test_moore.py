@@ -88,19 +88,50 @@ class TestMooreDetMachine:
             count += 1
         assert count == 4
 
-    def test_partitions(self):
+    def test_output_partitions(self):
         """Test output partitions."""
-        m = MooreDetMachine[str, str]()
+        m = MooreDetMachine[bool, str]()
         m.new_state_output("a")
         m.new_state_output("b")
         m.new_state_output("c")
 
         # Test partitions
-        assert m._output_partitions() == {
+        assert m._MooreDetMachine__output_partitions() == {
             frozenset({0}), frozenset({1}), frozenset({2}),
         }
         m.new_state_output("c")
         m.new_state_output("b")
-        assert m._output_partitions() == {
+        assert m._MooreDetMachine__output_partitions() == {
             frozenset({0}), frozenset({1, 4}), frozenset({2, 3}),
+        }
+
+    def test_splitters(self):
+        """Test the application of a splitter."""
+        m = MooreDetMachine[bool, str]()
+        m.new_state_output("a")
+        m.new_state_output("a")
+        m.new_state_output("a")
+
+        # Add transitions
+        m.new_transition(0, True, 1)
+        m.new_transition(0, False, 0)
+        m.new_transition(1, True, 2)
+        m.new_transition(1, False, 0)
+        m.new_transition(2, True, 2)
+        m.new_transition(2, False, 2)
+
+        assert m._MooreDetMachine__apply_splitter(m.states, True, {2}) == {
+            frozenset({1, 2}), frozenset({0}),
+        }
+        assert m._MooreDetMachine__apply_splitter(m.states, True, {0}) == {
+            frozenset({0, 1, 2}),
+        }
+        assert m._MooreDetMachine__apply_splitter(m.states, False, {0}) == {
+            frozenset({0, 1}), frozenset({2}),
+        }
+
+        m.new_state_output("b")
+        m.new_transition(3, True, 0)
+        assert m._MooreDetMachine__apply_splitter({0, 3}, True, {}) == {
+            frozenset({3}), frozenset({0}),
         }

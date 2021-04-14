@@ -1,7 +1,7 @@
 """Moore machine."""
 
 from pathlib import Path
-from typing import Dict, FrozenSet, Iterable, Optional, Set, Tuple
+from typing import AbstractSet, Dict, FrozenSet, Iterable, Optional, Set, Tuple
 
 from graphviz import Digraph  # type: ignore
 
@@ -115,22 +115,49 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
     def minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
         """Return a new minimized transducer equivalent to this.
 
-        This function implements the Hopcroft minimization algorithm for automata.
-        The implementation is based on the description in:
-        http://arxiv.org/abs/1010.5318.
+        This function implements the Hopcroft minimization algorithm for
+        automata.
         """
         pass
 
-    def _output_partitions(self) -> Set[FrozenSet[StateT]]:
+    def __output_partitions(self) -> Set[FrozenSet[StateT]]:
         """Return a partition of states based on the output function.
 
         If two states have the same output associated, they will be in the
-        same class.
+        same class. Auxiliary function for minimize.
+        :param states: a set of states to partition.
         :return: a complete partition of states.
         """
         partitions_map: Dict[OutputSymT, Set[StateT]] = dict()
         for state in self.states:
             out = self.output_fn(state)
             states_class = partitions_map.setdefault(out, set())
+            states_class.add(state)
+        return {frozenset(states) for states in partitions_map.values()}
+
+    def __apply_splitter(
+        self,
+        group: AbstractSet[StateT],
+        symbol: InputSymT,
+        test_set: AbstractSet[StateT],
+    ) -> Set[FrozenSet[StateT]]:
+        """Applies the splitter (test_set, symbol) to create a partition of group.
+
+        :param group: set of states to split.
+        :param symbol: input test symbol.
+        :param test_set: checking whether transitions will go to this set.
+        :return: a partition of group
+        """
+        # Distinguished by next state and output symbol
+        partitions_map: Dict[Tuple[bool, OutputSymT], Set[StateT]] = dict()
+
+        for state in group:
+            transition = self.det_step(state, symbol)
+            assert transition is not None
+            next_state, output_symbol = transition
+
+            inside = next_state in test_set
+            states_class = partitions_map.setdefault(
+                (inside, output_symbol), set())
             states_class.add(state)
         return {frozenset(states) for states in partitions_map.values()}
