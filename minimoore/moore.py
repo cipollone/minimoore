@@ -14,6 +14,10 @@ from minimoore.transducers import (
 )
 
 
+# Types
+SplitterT = Tuple[AbstractSet[StateT], InputSymT]
+
+
 class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
     """Deterministic Moore Machine."""
 
@@ -24,6 +28,8 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         # Store
         self.__output_table: Dict[StateT, Optional[OutputSymT]] = dict()
         self.__transitions: Dict[StateT, Dict[InputSymT, TransitionT]] = dict()
+        self.__input_symbols: Set[InputSymT] = set()
+        self.__output_symbols: Set[OutputSymT] = set()
 
     def _register_state(self, state: StateT):
         """Ops on the new state."""
@@ -34,6 +40,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         """Assign an output symbol to a state."""
         assert self.is_state(state)
         self.__output_table[state] = output
+        self.__output_symbols.add(output)
 
     def new_state_output(self, output: OutputSymT) -> StateT:
         """Create a new state and associate an output symbol."""
@@ -52,6 +59,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         assert self.is_state(state2)
         transition = (state1, symbol, state2)
         self.__transitions[state1][symbol] = transition
+        self.__input_symbols.add(symbol)
 
     def output_fn(self, state: StateT) -> OutputSymT:
         """Outputs are associated to states.
@@ -88,6 +96,16 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
             for symbol, transition in arcs.items():
                 yield transition
 
+    @property
+    def input_alphabet(self) -> Iterable[InputSymT]:
+        """Return an iterable on the entire input aphabet."""
+        return self.__input_symbols
+
+    @property
+    def output_alphabet(self) -> Iterable[OutputSymT]:
+        """Return an iterable on the entire output aphabet."""
+        return self.__output_symbols
+
     def save_graphviz(self, out_path: Path):
         """Save a graph to out_path using graphviz."""
         # Create an empty graph
@@ -113,12 +131,57 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         graph.render(filename=out_path)
 
     def minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
-        """Return a new minimized transducer equivalent to this.
+        """Return a new minimized transducer equivalent to this."""
+        # TODO
+        return self._hopcroft_minimize()
 
-        This function implements the Hopcroft minimization algorithm for
-        automata.
+    def _hopcroft_minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+        """Variant of Hopcroft minimization algorithm for transducers.
+
+        This assumes the transition function to be complete.
         """
-        pass
+        # Init
+        waiting_set: Set[SplitterT] = set()
+        partition = self.__output_partitions()  # Initial partitions
+
+        # Initial list of splitters
+        for symbol in self.input_alphabet:
+            for group in partition:
+                waiting_set.add((group, symbol))
+
+        # Until done
+        while len(waiting_set) > 0:
+            new_partition = set()
+
+            # Split each set
+            splitter = waiting_set.pop()
+            for group in partition:
+                sub_partition = self.__apply_splitter(
+                    group=group,
+                    symbol=splitter[1],
+                    test_set=splitter[0],
+                )
+
+                # Add result of split
+                new_partition.update(sub_partition)
+
+                # Not split. Nothing to do
+                if len(sub_partition) == 1:
+                    continue
+
+                # Update waiting set
+                for symbol in self.input_alphabet:
+                    waiting_set.discard((group, symbol))
+                    waiting_set.update({
+                        (sub_group, symbol) for sub_group in sub_partition
+                    })
+
+            # Next
+            partition = new_partition
+
+        # TODO: debug
+
+        # TODO: which return type?
 
     def __output_partitions(self) -> Set[FrozenSet[StateT]]:
         """Return a partition of states based on the output function.
@@ -143,6 +206,9 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
     ) -> Set[FrozenSet[StateT]]:
         """Applies the splitter (test_set, symbol) to create a partition of group.
 
+        Applying a splitter means checking whether every state in the group,
+        for the given symbol leads to the equivalence class test_set, with
+        an equivalent transition.
         :param group: set of states to split.
         :param symbol: input test symbol.
         :param test_set: checking whether transitions will go to this set.

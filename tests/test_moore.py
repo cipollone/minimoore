@@ -135,3 +135,36 @@ class TestMooreDetMachine:
         assert m._MooreDetMachine__apply_splitter({0, 3}, True, {}) == {
             frozenset({3}), frozenset({0}),
         }
+
+    def test_aphabet(self):
+        """Test the size of the aplhabets."""
+        m = MooreDetMachine[int, str]()
+        m.new_state_output("a")
+        m.new_state_output("b")
+        m.new_state_output("c")
+        m.new_state_output("c")
+        m.new_transition(0, 0, 1)
+        m.new_transition(1, 1, 2)
+        m.new_transition(2, 2, 3)
+        m.new_transition(3, 3, 3)
+        m.new_transition(3, -50, 0)
+        m.new_transition(2, -50, 0)
+
+        assert m.input_alphabet == {0, 1, 2, 3, -50}
+        assert m.output_alphabet == {"a", "b", "c"}
+
+    def test_hopcroft(self):
+        """Test minimization of the machine."""
+        m = MooreDetMachine[int, str]()
+        m.new_state_output("a")
+        m.new_state_output("a")
+        m.new_state_output("b")
+        m.new_transition(0, 0, 1)
+        m.new_transition(0, 1, 0)
+        m.new_transition(1, 0, 2)
+        m.new_transition(1, 1, 1)
+        m.new_transition(2, 0, 0)
+        m.new_transition(2, 1, 0)
+
+        # TODO: write some test
+        m._hopcroft_minimize()

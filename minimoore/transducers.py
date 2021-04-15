@@ -76,6 +76,19 @@ class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
         """An iterable on states."""
         return range(self.n_states)
 
+    @property
+    @abstractmethod
+    def input_alphabet(self) -> Iterable[InputSymT]:
+        """Return an iterable on the entire input aphabet."""
+        pass
+
+    @property
+    @abstractmethod
+    def output_alphabet(self) -> Iterable[OutputSymT]:
+        """Return an iterable on the entire output aphabet."""
+        pass
+
+    @property
     @abstractmethod
     def transitions(self) -> Iterable[TransitionT]:
         """Return an iterable on all transitions."""
