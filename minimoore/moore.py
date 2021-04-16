@@ -13,7 +13,6 @@ from minimoore.transducers import (
     TransitionT,
 )
 
-
 # Types
 SplitterT = Tuple[AbstractSet[StateT], InputSymT]
 
@@ -106,7 +105,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         """Return an iterable on the entire output aphabet."""
         return self.__output_symbols
 
-    def save_graphviz(self, out_path: Path):
+    def save_graphviz(self, out_path: str):
         """Save a graph to out_path using graphviz."""
         # Create an empty graph
         graph = Digraph(name="MooreMachine")
@@ -127,12 +126,11 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         graph.edge("init", str(self.init_state))
 
         # Save
-        out_path = out_path.with_suffix(".dot")
-        graph.render(filename=out_path)
+        path = Path(out_path).with_suffix(".dot")
+        graph.render(filename=path)
 
     def minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
         """Return a new minimized transducer equivalent to this."""
-        # TODO
         return self._hopcroft_minimize()
 
     def _hopcroft_minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
@@ -179,9 +177,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
             # Next
             partition = new_partition
 
-        # TODO: debug
-
-        # TODO: which return type?
+        return self.__from_partitions(partition)
 
     def __output_partitions(self) -> Set[FrozenSet[StateT]]:
         """Return a partition of states based on the output function.
@@ -227,3 +223,53 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
                 (inside, output_symbol), set())
             states_class.add(state)
         return {frozenset(states) for states in partitions_map.values()}
+
+    def __from_partitions(
+        self,
+        partition: AbstractSet[AbstractSet[StateT]],
+    ) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+        """Creates a new machine from a partition of states.
+
+        Given a set of equivalence classes, the partition, this function builds
+        a new automaton equivalent to this. Assumes a complete automaton.
+        :param partition: a partition of states of this automaton in
+            equivalence classes.
+        :return: a new minimized automaton.
+        """
+        automa = MooreDetMachine[InputSymT, OutputSymT]()
+        # TODO: debug
+
+        # TODO: this is ugly. better to collect transitions together with
+        #  partitions
+
+        # Inits
+        partition_list = list(partition)
+        partition_states: Dict[int, StateT] = dict()
+
+        # A state and output for each class
+        for i, group in enumerate(partition_list):
+            any_state = next(iter(group))
+            group_output = self.output_fn(any_state)
+            created_state = automa.new_state_output(group_output)
+            partition_states[i] = created_state
+
+            # Initial?
+            for s in group:
+                if self.init_state == s:
+                    automa.set_initial(created_state)
+
+        # A transition for each class
+        for i, group in enumerate(partition_list):
+            any_state = next(iter(group))
+
+            # Copy arcs
+            for symbol in self.input_alphabet:
+                next_state = self.step(any_state, symbol)
+                for j, next_group in enumerate(partition_list):
+                    if next_state in next_group:
+                        new_state = partition_states[i]
+                        new_next_state = partition_states[j]
+                        automa.new_transition(new_state, symbol, new_next_state)
+                        break
+
+        return automa

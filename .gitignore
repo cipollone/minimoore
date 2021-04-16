@@ -1,9 +1,12 @@
-# Python
-__pycache__/
-*.pyc
+# Project
+/outputs/
 
 # Packaging
 /.tox/
+
+# Python
+__pycache__/
+*.pyc
 
 # Vim
 /Session.vim

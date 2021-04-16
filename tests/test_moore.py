@@ -165,6 +165,9 @@ class TestMooreDetMachine:
         m.new_transition(1, 1, 1)
         m.new_transition(2, 0, 0)
         m.new_transition(2, 1, 0)
+        m.set_initial(0)
 
         # TODO: write some test
-        m._hopcroft_minimize()
+        m2 = m._hopcroft_minimize()
+        m.save_graphviz("outputs/m1")
+        m2.save_graphviz("outputs/m2")

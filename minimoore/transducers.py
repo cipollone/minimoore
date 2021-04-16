@@ -94,7 +94,7 @@ class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
         """Return an iterable on all transitions."""
         pass
 
-    def save_graphviz(self, out_path: Path):
+    def save_graphviz(self, out_path: str):
         """Save a graph to out_path using graphviz."""
         raise NotImplementedError("Should be overridden in subclasses")
 
