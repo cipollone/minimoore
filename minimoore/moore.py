@@ -133,8 +133,45 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         """Return a new minimized transducer equivalent to this."""
         return self._hopcroft_minimize()
 
+    def _moore_minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+        """Moore minimization algorithm for Moore machines.
+
+        This assumes the transition function to be complete.
+        NOTE: this is slow, only use this for testing.
+        """
+        # Init
+        partition = self.__output_partitions()  # Initial partition
+        new_partition: Set[FrozenSet[StateT]] = set()
+
+        # Fixpoint
+        while len(new_partition) != len(partition):
+
+            # Test all symbols
+            for symbol in self.input_alphabet:
+
+                # Split all groups
+                for group in partition:
+                    for test_group in partition:
+
+                        # Apply split
+                        sub_partition = self.__apply_splitter(
+                            group=group,
+                            symbol=symbol,
+                            test_set=test_group,
+                        )
+
+                        # Refine group
+                        for sub_group in sub_partition:
+                            refined_group = group & sub_group
+                            if len(refined_group) > 0:
+                                new_partition.add(refined_group)
+
+                partition = new_partition
+
+        return self.__from_partitions(partition)
+
     def _hopcroft_minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
-        """Variant of Hopcroft minimization algorithm for transducers.
+        """Variant of Hopcroft minimization algorithm for Moore machines.
 
         This assumes the transition function to be complete.
         """

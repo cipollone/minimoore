@@ -153,7 +153,7 @@ class TestMooreDetMachine:
         assert m.input_alphabet == {0, 1, 2, 3, -50}
         assert m.output_alphabet == {"a", "b", "c"}
 
-    def test_hopcroft(self):
+    def test_minimize(self):
         """Test minimization of the machine."""
         # Words to translate
         test_words = [
@@ -179,10 +179,13 @@ class TestMooreDetMachine:
         m1.set_initial(0)
 
         # This should be the same machine
-        m1_min = m1._hopcroft_minimize()
+        m1_min = m1.minimize()
         assert m1_min.n_states == 3
         for word in test_words:
             assert m1.process_word(word) == m1_min.process_word(word)
+
+        m1.save_graphviz("outputs/m1")
+        m1_min.save_graphviz("outputs/m1_min")
 
         # Redundant machine
         m2 = MooreDetMachine[int, str]()
@@ -207,10 +210,13 @@ class TestMooreDetMachine:
         m2.set_initial(0)
 
         # This should be as m1
-        m2_min = m2._hopcroft_minimize()
+        m2_min = m2.minimize()
         assert m2_min.n_states == 3
         for word in test_words:
             assert m2.process_word(word) == m2_min.process_word(word)
+
+        m2.save_graphviz("outputs/m2")
+        m2_min.save_graphviz("outputs/m2_min")
 
         # Very simple redundant machine
         m3 = MooreDetMachine[int, str]()
@@ -222,7 +228,7 @@ class TestMooreDetMachine:
         m3.new_transition(1, 0, 1)
         m3.set_initial(0)
 
-        m3_min = m3._hopcroft_minimize()
+        m3_min = m3.minimize()
         assert m3_min.n_states == 1
         for word in test_words:
             assert m3.process_word(word) == m3_min.process_word(word)
