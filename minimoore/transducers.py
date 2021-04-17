@@ -1,7 +1,6 @@
 """Interfaces for finite transducers."""
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Generic, Iterable, Optional, Sequence, Set, Tuple, TypeVar
 
 

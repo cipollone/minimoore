@@ -1,1 +1,0 @@
-let g:vebugger_path_python=system('poetry run which python')[:-2]

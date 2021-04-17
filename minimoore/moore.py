@@ -215,7 +215,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
 
         for state in group:
             transition = self.det_step(state, symbol)
-            assert transition is not None
+            assert transition is not None, "Transition function is not complete"
             next_state, output_symbol = transition
 
             inside = next_state in test_set
@@ -237,7 +237,6 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         :return: a new minimized automaton.
         """
         automa = MooreDetMachine[InputSymT, OutputSymT]()
-        # TODO: debug
 
         # TODO: this is ugly. better to collect transitions together with
         #  partitions
@@ -264,9 +263,10 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
 
             # Copy arcs
             for symbol in self.input_alphabet:
-                next_state = self.step(any_state, symbol)
+                transition = self.det_step(any_state, symbol)
+                assert transition is not None, "Transition fn is not complete"
                 for j, next_group in enumerate(partition_list):
-                    if next_state in next_group:
+                    if transition[0] in next_group:
                         new_state = partition_states[i]
                         new_next_state = partition_states[j]
                         automa.new_transition(new_state, symbol, new_next_state)

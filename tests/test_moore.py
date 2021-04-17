@@ -155,19 +155,77 @@ class TestMooreDetMachine:
 
     def test_hopcroft(self):
         """Test minimization of the machine."""
-        m = MooreDetMachine[int, str]()
-        m.new_state_output("a")
-        m.new_state_output("a")
-        m.new_state_output("b")
-        m.new_transition(0, 0, 1)
-        m.new_transition(0, 1, 0)
-        m.new_transition(1, 0, 2)
-        m.new_transition(1, 1, 1)
-        m.new_transition(2, 0, 0)
-        m.new_transition(2, 1, 0)
-        m.set_initial(0)
+        # Words to translate
+        test_words = [
+            [0],
+            [1],
+            [0, 0, 0],
+            [1, 1, 1],
+            [0, 1, 1],
+            [1, 0, 0, 0],
+        ]
 
-        # TODO: write some test
-        m2 = m._hopcroft_minimize()
-        m.save_graphviz("outputs/m1")
-        m2.save_graphviz("outputs/m2")
+        # Initial machine
+        m1 = MooreDetMachine[int, str]()
+        m1.new_state_output("a")
+        m1.new_state_output("a")
+        m1.new_state_output("b")
+        m1.new_transition(0, 0, 1)
+        m1.new_transition(0, 1, 0)
+        m1.new_transition(1, 0, 2)
+        m1.new_transition(1, 1, 1)
+        m1.new_transition(2, 0, 0)
+        m1.new_transition(2, 1, 0)
+        m1.set_initial(0)
+
+        # This should be the same machine
+        m1_min = m1._hopcroft_minimize()
+        assert m1_min.n_states == 3
+        for word in test_words:
+            assert m1.process_word(word) == m1_min.process_word(word)
+
+        # Redundant machine
+        m2 = MooreDetMachine[int, str]()
+        m2.new_state_output("a")
+        m2.new_state_output("a")
+        m2.new_state_output("b")
+        m2.new_state_output("a")
+        m2.new_state_output("a")
+        m2.new_state_output("b")
+        m2.new_transition(0, 0, 1)
+        m2.new_transition(0, 1, 0)
+        m2.new_transition(1, 0, 2)
+        m2.new_transition(1, 1, 1)
+        m2.new_transition(2, 0, 3)
+        m2.new_transition(2, 1, 3)
+        m2.new_transition(3, 0, 4)
+        m2.new_transition(3, 1, 3)
+        m2.new_transition(4, 0, 5)
+        m2.new_transition(4, 1, 4)
+        m2.new_transition(5, 0, 0)
+        m2.new_transition(5, 1, 0)
+        m2.set_initial(0)
+
+        # This should be as m1
+        m2_min = m2._hopcroft_minimize()
+        assert m2_min.n_states == 3
+        for word in test_words:
+            assert m2.process_word(word) == m2_min.process_word(word)
+
+        # Very simple redundant machine
+        m3 = MooreDetMachine[int, str]()
+        m3.new_state_output("a")
+        m3.new_state_output("a")
+        m3.new_transition(0, 0, 1)
+        m3.new_transition(0, 1, 1)
+        m3.new_transition(1, 1, 0)
+        m3.new_transition(1, 0, 1)
+        m3.set_initial(0)
+
+        m3_min = m3._hopcroft_minimize()
+        assert m3_min.n_states == 1
+        for word in test_words:
+            assert m3.process_word(word) == m3_min.process_word(word)
+
+        m3.save_graphviz("outputs/m3")
+        m3_min.save_graphviz("outputs/m3_min")
