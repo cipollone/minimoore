@@ -1,8 +1,8 @@
 """Interfaces for finite transducers."""
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Generic, Iterable, Optional, Sequence, Set, Tuple, TypeVar
+
 
 # Types
 InputSymT = TypeVar("InputSymT")
@@ -70,16 +70,30 @@ class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
         """
         pass
 
+    @property
     def states(self) -> Iterable[StateT]:
-        """Return an iterable on the states."""
+        """An iterable on states."""
         return range(self.n_states)
 
+    @property
+    @abstractmethod
+    def input_alphabet(self) -> Iterable[InputSymT]:
+        """Return an iterable on the entire input aphabet."""
+        pass
+
+    @property
+    @abstractmethod
+    def output_alphabet(self) -> Iterable[OutputSymT]:
+        """Return an iterable on the entire output aphabet."""
+        pass
+
+    @property
     @abstractmethod
     def transitions(self) -> Iterable[TransitionT]:
         """Return an iterable on all transitions."""
         pass
 
-    def save_graphviz(self, out_path: Path):
+    def save_graphviz(self, out_path: str):
         """Save a graph to out_path using graphviz."""
         raise NotImplementedError("Should be overridden in subclasses")
 
