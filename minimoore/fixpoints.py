@@ -14,9 +14,9 @@ def reach_fixpoint(
 ) -> Set[ElementType]:
     """Return a fixpoint from a staring set.
 
-    :param fn: a monotone input function on sets. Its domain/codomain must be
+    :param fn: a monotone input function on sets. Its domain must be
         finite, and the function must be monotone. This won't terminate
-        otherwise. Side effects on the input set are allowed.
+        otherwise. Side effects on the input set are preferred for efficiency.
     :param start: the initial set of states.
     :return: A fixpoint.
     """
