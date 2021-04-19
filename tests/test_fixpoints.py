@@ -74,3 +74,17 @@ class TestFixpoints:
         fn = fixpoints.Intersection(self.f4)
         gfp = fixpoints.greatest_fixpoint(fn, set(range(0, 50)))
         assert gfp == {0, 1, 2, 3, 4}
+
+    def test_stop(self):
+        """Test stop conditions."""
+        fn = fixpoints.Union(self.f3)
+        lfp = fixpoints.least_fixpoint(fn, {1}, lambda x: 7 in x)
+        assert lfp == {1, 3, 5, 7}
+
+        fn = fixpoints.Intersection(self.f4)
+        gfp = fixpoints.greatest_fixpoint(
+            fn,
+            set(range(0, 50)),
+            lambda x: 6 not in x,
+        )
+        assert gfp == {0, 1, 2, 3, 4, 5}

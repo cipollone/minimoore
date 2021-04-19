@@ -5,11 +5,13 @@ from typing import Callable, Generic, Optional, Set, TypeVar
 # Types
 ElementType = TypeVar("ElementType")
 FunctionType = Callable[[Set[ElementType]], Set[ElementType]]
+StopConditionType = Callable[[Set[ElementType]], bool]
 
 
 def reach_fixpoint(
     fn: FunctionType[ElementType],
     start: Set[ElementType],
+    stop_cond: Optional[StopConditionType[ElementType]] = None,
 ) -> Set[ElementType]:
     """Return a fixpoint from a staring set.
 
@@ -17,7 +19,8 @@ def reach_fixpoint(
         finite, and the function must be monotone. This won't terminate
         otherwise. Side effects on the input set are preferred for efficiency.
     :param start: the initial set of states.
-    :return: A fixpoint.
+    :param stop_cond: the algorithm is stopped as soon as this returns True.
+    :return: A fixpoint, or the set reached at the stop condition.
     """
     # Init
     x = start
@@ -25,6 +28,11 @@ def reach_fixpoint(
 
     # Iterate
     while len(x) != x_len:
+        # Stop?
+        if stop_cond is not None and stop_cond(x):
+            break
+
+        # Do
         x_len = len(x)
         x = fn(x)
 
@@ -34,6 +42,7 @@ def reach_fixpoint(
 def least_fixpoint(
     fn: FunctionType[ElementType],
     start: Optional[Set[ElementType]] = set(),
+    stop_cond: Optional[StopConditionType[ElementType]] = None,
 ) -> Set[ElementType]:
     """Returns the least fixpoint for the input function.
 
@@ -41,23 +50,28 @@ def least_fixpoint(
         are allowed.
     :param start: the initial set. This may be useful if the initialization
         is special, and we don't want to complicate fn.
-    :return: the least fixpoint for fn.
+    :param stop_cond: the algorithm is stopped as soon as this returns True.
+    :return: the least fixpoint for fn, or the set reached at stop condition.
     """
-    return reach_fixpoint(fn, start if start is not None else set())
+    if start is None:
+        start = set()
+    return reach_fixpoint(fn, start, stop_cond)
 
 
 def greatest_fixpoint(
     fn: FunctionType[ElementType],
     universe: Set[ElementType],
+    stop_cond: Optional[StopConditionType[ElementType]] = None,
 ) -> Set[ElementType]:
     """Returns the greatest fixpoint for the input function.
 
     :param fn: a *monotone* function on sets. Side effects on the input set
         are allowed.
     :param universe: the entire set of elements.
-    :return: the greatest fixpoint set of fn.
+    :param stop_cond: the algorithm is stopped as soon as this returns True.
+    :return: the greatest fixpoint set of fn, or the set reached at stop condition.
     """
-    return reach_fixpoint(fn, universe)
+    return reach_fixpoint(fn, universe, stop_cond)
 
 
 class Union(Generic[ElementType]):
