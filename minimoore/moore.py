@@ -1,5 +1,6 @@
 """Moore machine."""
 
+import functools
 from pathlib import Path
 from typing import AbstractSet, Dict, FrozenSet, Iterable, Optional, Set, Tuple
 
@@ -318,17 +319,22 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
     ) -> bool:
         """Check equivalence with another Moore machine.
 
-        Verifies if this and the given machine satisfy bisimulation from
-        their initial states.
+        Verifies if the given machine is input-output equivalent to this.
+        To check this, we verify the bisimulation property of the two initial
+        states.
         :param machine: machine to verify.
         :return: true if the two Moore machines are equivalent.
         """
         # Basic equivalence checks
         if machine is None:
-            return False
+            raise TypeError("None")
         if machine is self:
             return True
         if not isinstance(machine, MooreDetMachine):
+            return False
+        if self.input_alphabet != machine.input_alphabet:
+            return False
+        if self.output_alphabet != machine.output_alphabet:
             return False
 
         # Pairs of states
@@ -336,5 +342,64 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
             (s1, s2) for s2 in machine.states for s1 in self.states
         }
 
-        # Compute bisimulation
-        # TODO
+        # Stop condition
+        def not_initial_states(x: AbstractSet[Tuple[StateT, StateT]]) -> bool:
+            return (self.init_state, machine.init_state) not in x
+
+        # Incremental function
+        bisimilar_fn = fixpoints.Difference(
+            functools.partial(self.__not_bisimilar_set, machine=machine)
+        )
+
+        # Compute relation
+        gfp = fixpoints.greatest_fixpoint(
+            fn=bisimilar_fn,
+            universe=universe,
+            stop_cond=not_initial_states,
+        )
+
+        # Return final relation
+        bisimulated = not not_initial_states(gfp)
+        return bisimulated
+
+    def __not_bisimilar_set(
+        self,
+        bisimilar: Set[Tuple[StateT, StateT]],
+        machine: "MooreDetMachine[InputSymT, OutputSymT]",
+    ) -> Set[Tuple[StateT, StateT]]:
+        """Remove all states which are not 1-step similar.
+
+        Performs one step in both machines, and removes all states which
+        are not bisimilar.
+        :param bisimilar: input pair of bisimilar states.
+        :param machine: machine to compare with self.
+        :return: the modified input set of bisimilar states.
+        """
+        not_bisimilar: Set[Tuple[StateT, StateT]] = set()
+        for s1, s2 in bisimilar:
+            # Same output
+            if self.output_fn(s1) != machine.output_fn(s2):
+                not_bisimilar.add((s1, s2))
+                continue
+
+            # Same arcs
+            arcs1 = self.arcs_from(s1)
+            arcs2 = machine.arcs_from(s2)
+            if arcs1 != arcs2:
+                not_bisimilar.add((s1, s2))
+                continue
+
+            # Similar transitions
+            for symbol in arcs1:
+                transition1 = self.det_step(s1, symbol)
+                transition2 = machine.det_step(s2, symbol)
+                assert transition1 is not None
+                assert transition2 is not None
+                next1 = transition1[0]
+                next2 = transition2[0]
+
+                if (next1, next2) not in bisimilar:
+                    not_bisimilar.add((s1, s2))
+                    continue
+
+        return not_bisimilar

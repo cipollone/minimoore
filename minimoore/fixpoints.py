@@ -1,11 +1,12 @@
 """Implementation of fixpoint algorithms for functions on sets."""
 
-from typing import Callable, Generic, Optional, Set, TypeVar
+from typing import AbstractSet, Callable, Generic, Optional, Set, TypeVar
 
 # Types
 ElementType = TypeVar("ElementType")
 FunctionType = Callable[[Set[ElementType]], Set[ElementType]]
-StopConditionType = Callable[[Set[ElementType]], bool]
+AFunctionType = Callable[[AbstractSet[ElementType]], AbstractSet[ElementType]]
+StopConditionType = Callable[[AbstractSet[ElementType]], bool]
 
 
 def reach_fixpoint(
@@ -81,7 +82,7 @@ class Union(Generic[ElementType]):
     This can be passed to fixpoint methods.
     The input function shouln't have side-effects on the set.
     """
-    def __init__(self, fn: FunctionType[ElementType]):
+    def __init__(self, fn: AFunctionType[ElementType]):
         """Initialize; see class docstring."""
         self.fn = fn
 
@@ -99,7 +100,7 @@ class Intersection(Generic[ElementType]):
     elements returned from the function. This can be passed to fixpoint
     methods.  The input function shouln't have side-effects on the set.
     """
-    def __init__(self, fn: FunctionType[ElementType]):
+    def __init__(self, fn: AFunctionType[ElementType]):
         """Initialize; see class docstring."""
         self.fn = fn
 
@@ -117,7 +118,7 @@ class Difference(Generic[ElementType]):
     if present. This can be passed to fixpoint methods.
     The input function shouln't have side-effects on the set.
     """
-    def __init__(self, fn: FunctionType[ElementType]):
+    def __init__(self, fn: AFunctionType[ElementType]):
         """Initialize; see class docstring."""
         self.fn = fn
 
