@@ -4,6 +4,8 @@ import pytest
 
 from minimoore.moore import MooreDetMachine
 
+MachineT = MooreDetMachine[int, str]
+
 
 class TestMooreDetMachine:
     """Test MooreDetMachine."""
@@ -30,9 +32,10 @@ class TestMooreDetMachine:
         # Initial
         automaton.set_initial(1)
         assert len(automaton.init_states) == 1
-        assert automaton.init_state == 1
-        with pytest.raises(AssertionError):
-            automaton.set_initial(0)
+        assert automaton.init_state == next(iter(automaton.init_states)) == 1
+        automaton.set_initial(0)
+        assert len(automaton.init_states) == 1
+        assert automaton.init_state == next(iter(automaton.init_states)) == 0
 
     def test_arcs(self):
         """Test creation of arcs."""
@@ -153,19 +156,9 @@ class TestMooreDetMachine:
         assert m.input_alphabet == {0, 1, 2, 3, -50}
         assert m.output_alphabet == {"a", "b", "c"}
 
-    def test_minimize(self):
-        """Test minimization of the machine."""
-        # Words to translate
-        test_words = [
-            [0],
-            [1],
-            [0, 0, 0],
-            [1, 1, 1],
-            [0, 1, 1],
-            [1, 0, 0, 0],
-        ]
-
-        # Initial machine
+    @pytest.fixture
+    def machine_m1(self):
+        """Return a minimal machine called."""
         m1 = MooreDetMachine[int, str]()
         m1.new_state_output("a")
         m1.new_state_output("a")
@@ -177,17 +170,11 @@ class TestMooreDetMachine:
         m1.new_transition(2, 0, 0)
         m1.new_transition(2, 1, 0)
         m1.set_initial(0)
+        return m1
 
-        # This should be the same machine
-        m1_min = m1.minimize()
-        assert m1_min.n_states == 3
-        for word in test_words:
-            assert m1.process_word(word) == m1_min.process_word(word)
-
-        m1.save_graphviz("outputs/m1")
-        m1_min.save_graphviz("outputs/m1_min")
-
-        # Redundant machine
+    @pytest.fixture
+    def machine_m2(self):
+        """Return a redundant machine machine."""
         m2 = MooreDetMachine[int, str]()
         m2.new_state_output("a")
         m2.new_state_output("a")
@@ -208,15 +195,37 @@ class TestMooreDetMachine:
         m2.new_transition(5, 0, 0)
         m2.new_transition(5, 1, 0)
         m2.set_initial(0)
+        return m2
+
+    def test_minimize(self, machine_m1: MachineT, machine_m2: MachineT):
+        """Test minimization of the machine."""
+        # Words to translate
+        test_words = [
+            [0],
+            [1],
+            [0, 0, 0],
+            [1, 1, 1],
+            [0, 1, 1],
+            [1, 0, 0, 0],
+        ]
+
+        # Machine
+        m1 = machine_m1
+
+        # This should be the same machine
+        m1_min = m1.minimize()
+        assert m1_min.n_states == 3
+        for word in test_words:
+            assert m1.process_word(word) == m1_min.process_word(word)
+
+        # Redundant machine
+        m2 = machine_m2
 
         # This should be as m1
         m2_min = m2.minimize()
         assert m2_min.n_states == 3
         for word in test_words:
             assert m2.process_word(word) == m2_min.process_word(word)
-
-        m2.save_graphviz("outputs/m2")
-        m2_min.save_graphviz("outputs/m2_min")
 
         # Very simple redundant machine
         m3 = MooreDetMachine[int, str]()
@@ -233,5 +242,22 @@ class TestMooreDetMachine:
         for word in test_words:
             assert m3.process_word(word) == m3_min.process_word(word)
 
-        m3.save_graphviz("outputs/m3")
-        m3_min.save_graphviz("outputs/m3_min")
+    def test_bisimilar(self, machine_m1: MachineT, machine_m2: MachineT):
+        """Test bisimulation."""
+
+        assert machine_m1.is_equivalent(machine_m1)
+
+        assert machine_m1.is_equivalent(machine_m2)
+        assert machine_m2.is_equivalent(machine_m1)
+
+        m2_min = machine_m2.minimize()
+        assert machine_m2.is_equivalent(m2_min)
+        assert m2_min.is_equivalent(machine_m2)
+        assert m2_min.is_equivalent(machine_m1)
+
+        m1_min = machine_m1.minimize()
+        assert machine_m1.is_equivalent(m1_min)
+
+        machine_m2.set_initial(1)
+        assert not m2_min.is_equivalent(machine_m2)
+        assert not machine_m2.is_equivalent(m2_min)

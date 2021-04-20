@@ -108,9 +108,8 @@ class FiniteDetTransducer(FiniteTransducer[InputSymT, OutputSymT]):
 
     def set_initial(self, state: StateT):
         """Set state as initial."""
-        assert (
-            self.init_state is None and len(self.init_states) == 0
-        ), "Initial state already set"
+        # Substitute the previous initial state
+        self.init_states.clear()
         super().set_initial(state)
         self.init_state = state
 

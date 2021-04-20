@@ -1,10 +1,12 @@
 """Moore machine."""
 
+import functools
 from pathlib import Path
 from typing import AbstractSet, Dict, FrozenSet, Iterable, Optional, Set, Tuple
 
 from graphviz import Digraph  # type: ignore
 
+from minimoore import fixpoints
 from minimoore.transducers import (
     FiniteDetTransducer,
     InputSymT,
@@ -129,11 +131,11 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         path = Path(out_path).with_suffix(".dot")
         graph.render(filename=path)
 
-    def minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+    def minimize(self) -> "MooreDetMachine[InputSymT, OutputSymT]":
         """Return a new minimized transducer equivalent to this."""
         return self._hopcroft_minimize()
 
-    def _moore_minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+    def _moore_minimize(self) -> "MooreDetMachine[InputSymT, OutputSymT]":
         """Moore minimization algorithm for Moore machines.
 
         This assumes the transition function to be complete.
@@ -170,7 +172,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
 
         return self.__from_partitions(partition)
 
-    def _hopcroft_minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+    def _hopcroft_minimize(self) -> "MooreDetMachine[InputSymT, OutputSymT]":
         """Variant of Hopcroft minimization algorithm for Moore machines.
 
         This assumes the transition function to be complete.
@@ -264,7 +266,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
     def __from_partitions(
         self,
         partition: AbstractSet[AbstractSet[StateT]],
-    ) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+    ) -> "MooreDetMachine[InputSymT, OutputSymT]":
         """Creates a new machine from a partition of states.
 
         Given a set of equivalence classes, the partition, this function builds
@@ -310,3 +312,94 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
                         break
 
         return automa
+
+    def is_equivalent(
+        self,
+        machine: "MooreDetMachine[InputSymT, OutputSymT]",
+    ) -> bool:
+        """Check equivalence with another Moore machine.
+
+        Verifies if the given machine is input-output equivalent to this.
+        To check this, we verify the bisimulation property of the two initial
+        states.
+        :param machine: machine to verify.
+        :return: true if the two Moore machines are equivalent.
+        """
+        # Basic equivalence checks
+        if machine is None:
+            raise TypeError("None")
+        if machine is self:
+            return True
+        if not isinstance(machine, MooreDetMachine):
+            return False
+        if self.input_alphabet != machine.input_alphabet:
+            return False
+        if self.output_alphabet != machine.output_alphabet:
+            return False
+
+        # Pairs of states
+        universe = {
+            (s1, s2) for s2 in machine.states for s1 in self.states
+        }
+
+        # Stop condition
+        def not_initial_states(x: AbstractSet[Tuple[StateT, StateT]]) -> bool:
+            return (self.init_state, machine.init_state) not in x
+
+        # Incremental function
+        bisimilar_fn = fixpoints.Difference(
+            functools.partial(self.__not_bisimilar_set, machine=machine)
+        )
+
+        # Compute relation
+        gfp = fixpoints.greatest_fixpoint(
+            fn=bisimilar_fn,
+            universe=universe,
+            stop_cond=not_initial_states,
+        )
+
+        # Return final relation
+        bisimulated = not not_initial_states(gfp)
+        return bisimulated
+
+    def __not_bisimilar_set(
+        self,
+        bisimilar: Set[Tuple[StateT, StateT]],
+        machine: "MooreDetMachine[InputSymT, OutputSymT]",
+    ) -> Set[Tuple[StateT, StateT]]:
+        """Remove all states which are not 1-step similar.
+
+        Performs one step in both machines, and removes all states which
+        are not bisimilar.
+        :param bisimilar: input pair of bisimilar states.
+        :param machine: machine to compare with self.
+        :return: the modified input set of bisimilar states.
+        """
+        not_bisimilar: Set[Tuple[StateT, StateT]] = set()
+        for s1, s2 in bisimilar:
+            # Same output
+            if self.output_fn(s1) != machine.output_fn(s2):
+                not_bisimilar.add((s1, s2))
+                continue
+
+            # Same arcs
+            arcs1 = self.arcs_from(s1)
+            arcs2 = machine.arcs_from(s2)
+            if arcs1 != arcs2:
+                not_bisimilar.add((s1, s2))
+                continue
+
+            # Similar transitions
+            for symbol in arcs1:
+                transition1 = self.det_step(s1, symbol)
+                transition2 = machine.det_step(s2, symbol)
+                assert transition1 is not None
+                assert transition2 is not None
+                next1 = transition1[0]
+                next2 = transition2[0]
+
+                if (next1, next2) not in bisimilar:
+                    not_bisimilar.add((s1, s2))
+                    continue
+
+        return not_bisimilar
