@@ -5,6 +5,7 @@ from typing import AbstractSet, Dict, FrozenSet, Iterable, Optional, Set, Tuple
 
 from graphviz import Digraph  # type: ignore
 
+from minimoore import fixpoints
 from minimoore.transducers import (
     FiniteDetTransducer,
     InputSymT,
@@ -129,11 +130,11 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         path = Path(out_path).with_suffix(".dot")
         graph.render(filename=path)
 
-    def minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+    def minimize(self) -> "MooreDetMachine[InputSymT, OutputSymT]":
         """Return a new minimized transducer equivalent to this."""
         return self._hopcroft_minimize()
 
-    def _moore_minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+    def _moore_minimize(self) -> "MooreDetMachine[InputSymT, OutputSymT]":
         """Moore minimization algorithm for Moore machines.
 
         This assumes the transition function to be complete.
@@ -170,7 +171,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
 
         return self.__from_partitions(partition)
 
-    def _hopcroft_minimize(self) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+    def _hopcroft_minimize(self) -> "MooreDetMachine[InputSymT, OutputSymT]":
         """Variant of Hopcroft minimization algorithm for Moore machines.
 
         This assumes the transition function to be complete.
@@ -264,7 +265,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
     def __from_partitions(
         self,
         partition: AbstractSet[AbstractSet[StateT]],
-    ) -> "FiniteDetTransducer[InputSymT, OutputSymT]":
+    ) -> "MooreDetMachine[InputSymT, OutputSymT]":
         """Creates a new machine from a partition of states.
 
         Given a set of equivalence classes, the partition, this function builds
@@ -310,3 +311,30 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
                         break
 
         return automa
+
+    def is_equivalent(
+        self,
+        machine: "MooreDetMachine[InputSymT, OutputSymT]",
+    ) -> bool:
+        """Check equivalence with another Moore machine.
+
+        Verifies if this and the given machine satisfy bisimulation from
+        their initial states.
+        :param machine: machine to verify.
+        :return: true if the two Moore machines are equivalent.
+        """
+        # Basic equivalence checks
+        if machine is None:
+            return False
+        if machine is self:
+            return True
+        if not isinstance(machine, MooreDetMachine):
+            return False
+
+        # Pairs of states
+        universe = {
+            (s1, s2) for s2 in machine.states for s1 in self.states
+        }
+
+        # Compute bisimulation
+        # TODO

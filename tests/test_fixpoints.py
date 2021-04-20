@@ -37,6 +37,11 @@ class TestFixpoints:
         """Monotone function: remove if next not here (stop at 5)."""
         return {elem for elem in x if elem + 1 in x or elem < 5}
 
+    @staticmethod
+    def f5(x: Set[int]) -> Set[int]:
+        """Monotone function: remove if next not here (stop at 5)."""
+        return {elem for elem in x if elem + 1 not in x and elem >= 5}
+
     def test_least(self):
         """Test the least fixpoint in a very simple case."""
         start = {
@@ -72,6 +77,12 @@ class TestFixpoints:
     def test_greatest_intersection(self):
         """Test greatest fixpoint with intersection."""
         fn = fixpoints.Intersection(self.f4)
+        gfp = fixpoints.greatest_fixpoint(fn, set(range(0, 50)))
+        assert gfp == {0, 1, 2, 3, 4}
+
+    def test_greatest_difference(self):
+        """Test greatest fixpoint with difference."""
+        fn = fixpoints.Difference(self.f5)
         gfp = fixpoints.greatest_fixpoint(fn, set(range(0, 50)))
         assert gfp == {0, 1, 2, 3, 4}
 

@@ -95,6 +95,24 @@ class Union(Generic[ElementType]):
 class Intersection(Generic[ElementType]):
     """Function wrapper: intersection.
 
+    The output set will be the intersection of the original element and the
+    elements returned from the function. This can be passed to fixpoint
+    methods.  The input function shouln't have side-effects on the set.
+    """
+    def __init__(self, fn: FunctionType[ElementType]):
+        """Initialize; see class docstring."""
+        self.fn = fn
+
+    def __call__(self, x: Set[ElementType]) -> Set[ElementType]:
+        """Modify the input set."""
+        elements = self.fn(x)
+        x.intersection_update(elements)
+        return x
+
+
+class Difference(Generic[ElementType]):
+    """Function wrapper: difference.
+
     Any element that is returned by the input function is removed from the set,
     if present. This can be passed to fixpoint methods.
     The input function shouln't have side-effects on the set.
@@ -106,5 +124,5 @@ class Intersection(Generic[ElementType]):
     def __call__(self, x: Set[ElementType]) -> Set[ElementType]:
         """Modify the input set."""
         elements = self.fn(x)
-        x.intersection_update(elements)
+        x.difference_update(elements)
         return x
