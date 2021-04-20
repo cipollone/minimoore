@@ -3,7 +3,6 @@
 from abc import ABC, abstractmethod
 from typing import Generic, Iterable, Optional, Sequence, Set, Tuple, TypeVar
 
-
 # Types
 InputSymT = TypeVar("InputSymT")
 OutputSymT = TypeVar("OutputSymT")

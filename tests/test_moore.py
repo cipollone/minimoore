@@ -100,12 +100,16 @@ class TestMooreDetMachine:
 
         # Test partitions
         assert m._MooreDetMachine__output_partitions() == {
-            frozenset({0}), frozenset({1}), frozenset({2}),
+            frozenset({0}),
+            frozenset({1}),
+            frozenset({2}),
         }
         m.new_state_output("c")
         m.new_state_output("b")
         assert m._MooreDetMachine__output_partitions() == {
-            frozenset({0}), frozenset({1, 4}), frozenset({2, 3}),
+            frozenset({0}),
+            frozenset({1, 4}),
+            frozenset({2, 3}),
         }
 
     def test_splitters(self):
@@ -124,19 +128,22 @@ class TestMooreDetMachine:
         m.new_transition(2, False, 2)
 
         assert m._MooreDetMachine__apply_splitter(m.states, True, {2}) == {
-            frozenset({1, 2}), frozenset({0}),
+            frozenset({1, 2}),
+            frozenset({0}),
         }
         assert m._MooreDetMachine__apply_splitter(m.states, True, {0}) == {
             frozenset({0, 1, 2}),
         }
         assert m._MooreDetMachine__apply_splitter(m.states, False, {0}) == {
-            frozenset({0, 1}), frozenset({2}),
+            frozenset({0, 1}),
+            frozenset({2}),
         }
 
         m.new_state_output("b")
         m.new_transition(3, True, 0)
         assert m._MooreDetMachine__apply_splitter({0, 3}, True, {}) == {
-            frozenset({3}), frozenset({0}),
+            frozenset({3}),
+            frozenset({0}),
         }
 
     def test_aphabet(self):

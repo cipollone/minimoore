@@ -42,7 +42,7 @@ def reach_fixpoint(
 
 def least_fixpoint(
     fn: FunctionType[ElementType],
-    start: Optional[Set[ElementType]] = set(),
+    start: Optional[Set[ElementType]] = None,
     stop_cond: Optional[StopConditionType[ElementType]] = None,
 ) -> Set[ElementType]:
     """Returns the least fixpoint for the input function.
@@ -82,6 +82,7 @@ class Union(Generic[ElementType]):
     This can be passed to fixpoint methods.
     The input function shouln't have side-effects on the set.
     """
+
     def __init__(self, fn: AFunctionType[ElementType]):
         """Initialize; see class docstring."""
         self.fn = fn
@@ -100,6 +101,7 @@ class Intersection(Generic[ElementType]):
     elements returned from the function. This can be passed to fixpoint
     methods.  The input function shouln't have side-effects on the set.
     """
+
     def __init__(self, fn: AFunctionType[ElementType]):
         """Initialize; see class docstring."""
         self.fn = fn
@@ -118,6 +120,7 @@ class Difference(Generic[ElementType]):
     if present. This can be passed to fixpoint methods.
     The input function shouln't have side-effects on the set.
     """
+
     def __init__(self, fn: AFunctionType[ElementType]):
         """Initialize; see class docstring."""
         self.fn = fn

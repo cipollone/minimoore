@@ -44,9 +44,7 @@ class TestFixpoints:
 
     def test_least(self):
         """Test the least fixpoint in a very simple case."""
-        start = {
-            "testing"
-        }
+        start = {"testing"}
         lfp = fixpoints.least_fixpoint(self.f1, start)
         assert lfp == {"testing", "testin", "testi", "test", "tes", "te", "t", ""}
 

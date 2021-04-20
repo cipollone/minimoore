@@ -209,9 +209,9 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
                 # Update waiting set
                 for symbol in self.input_alphabet:
                     waiting_set.discard((group, symbol))
-                    waiting_set.update({
-                        (sub_group, symbol) for sub_group in sub_partition
-                    })
+                    waiting_set.update(
+                        {(sub_group, symbol) for sub_group in sub_partition}
+                    )
 
             # Next
             partition = new_partition
@@ -258,8 +258,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
             next_state, output_symbol = transition
 
             inside = next_state in test_set
-            states_class = partitions_map.setdefault(
-                (inside, output_symbol), set())
+            states_class = partitions_map.setdefault((inside, output_symbol), set())
             states_class.add(state)
         return {frozenset(states) for states in partitions_map.values()}
 
@@ -338,9 +337,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
             return False
 
         # Pairs of states
-        universe = {
-            (s1, s2) for s2 in machine.states for s1 in self.states
-        }
+        universe = {(s1, s2) for s2 in machine.states for s1 in self.states}
 
         # Stop condition
         def not_initial_states(x: AbstractSet[Tuple[StateT, StateT]]) -> bool:
