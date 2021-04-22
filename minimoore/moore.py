@@ -417,6 +417,21 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
 
         return not_bisimilar
 
+    def __eq__(self, other) -> bool:
+        """Compare two objects.
+
+        This tests if the two graphs are the same. For input-output equivalence
+        see is_equivalent method.
+        """
+        # Sufficient conditions
+        if self is other:
+            return True
+        if not super().__eq__(other):
+            return False
+
+        # Additional constraint
+        return self.__output_table == other.__output_table
+
 
 class MooreBuilder(Generic[InputSymT, OutputSymT]):
     """Helper class to create MooreDetMachine.

@@ -2,7 +2,7 @@
 
 import pytest
 
-from minimoore.moore import MooreDetMachine
+from minimoore.moore import MooreDetMachine, MooreBuilder
 
 MachineT = MooreDetMachine[int, str]
 
@@ -268,3 +268,49 @@ class TestMooreDetMachine:
         machine_m2.set_initial(1)
         assert not m2_min.is_equivalent(machine_m2)
         assert not machine_m2.is_equivalent(m2_min)
+
+    def test_eq(self, machine_m1: MachineT, machine_m2: MachineT):
+        """Test equality."""
+
+        # TODO: copy of machine
+        assert MooreDetMachine() == MooreDetMachine()
+        assert MooreDetMachine() != machine_m1
+        assert machine_m1 == machine_m1
+        assert machine_m1 != machine_m2
+
+        assert machine_m2_copy is not machine_m2
+        assert machine_m2 == machine_m2_copy
+        machine_m2_copy.set_initial(1)
+        assert machine_m2 != machine_m2_copy
+
+
+# TODO
+class TestBuilder:
+    """Test MooreBuilder class."""
+
+    def m1(self) -> MooreDetMachine[int, int]:
+        """Create the machine m1 without builder."""
+        m = MooreDetMachine[int, int]()
+        m.new_state_output(10)
+        m.new_state_output(11)
+        m.set_initial(0)
+        m.new_transition(0, 0, 0)
+        m.new_transition(0, 1, 1)
+        m.new_transition(1, 0, 0)
+        m.new_transition(1, 1, 1)
+        return m
+
+    def m1_builder(self) -> MooreDetMachine[int, int]:
+        """Create a machine with the builder."""
+        builder = MooreBuilder[int, int]()
+        (builder.state("init").init().output(10)
+            .to(0, "init")
+            .to(1, "s1"))
+        (builder.state("s1").output(11)
+            .to(0, "init")
+            .to(1, "s1"))
+
+        return builder.machine
+
+    #def test_builder(self, m1, m1_builder):
+        #"""Compare machines."""
