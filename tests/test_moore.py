@@ -1,14 +1,62 @@
 """Tests for moore module."""
 
+from typing import Callable
+
 import pytest
 
-from minimoore.moore import MooreDetMachine, MooreBuilder
+from minimoore.moore import MooreBuilder, MooreDetMachine
 
 MachineT = MooreDetMachine[int, str]
+MakerT = Callable[[], MachineT]
 
 
 class TestMooreDetMachine:
     """Test MooreDetMachine."""
+
+    @pytest.fixture
+    def maker1(self):
+        """On each call return a minimal machine."""
+        def make():
+            m1 = MooreDetMachine[int, str]()
+            m1.new_state_output("a")
+            m1.new_state_output("a")
+            m1.new_state_output("b")
+            m1.new_transition(0, 0, 1)
+            m1.new_transition(0, 1, 0)
+            m1.new_transition(1, 0, 2)
+            m1.new_transition(1, 1, 1)
+            m1.new_transition(2, 0, 0)
+            m1.new_transition(2, 1, 0)
+            m1.set_initial(0)
+            return m1
+        return make
+
+    @pytest.fixture
+    def maker2(self):
+        """On each call return a redundant machine."""
+        def make():
+            m2 = MooreDetMachine[int, str]()
+            m2.new_state_output("a")
+            m2.new_state_output("a")
+            m2.new_state_output("b")
+            m2.new_state_output("a")
+            m2.new_state_output("a")
+            m2.new_state_output("b")
+            m2.new_transition(0, 0, 1)
+            m2.new_transition(0, 1, 0)
+            m2.new_transition(1, 0, 2)
+            m2.new_transition(1, 1, 1)
+            m2.new_transition(2, 0, 3)
+            m2.new_transition(2, 1, 3)
+            m2.new_transition(3, 0, 4)
+            m2.new_transition(3, 1, 3)
+            m2.new_transition(4, 0, 5)
+            m2.new_transition(4, 1, 4)
+            m2.new_transition(5, 0, 0)
+            m2.new_transition(5, 1, 0)
+            m2.set_initial(0)
+            return m2
+        return make
 
     def test_empty(self):
         """Test initialization."""
@@ -163,48 +211,7 @@ class TestMooreDetMachine:
         assert m.input_alphabet == {0, 1, 2, 3, -50}
         assert m.output_alphabet == {"a", "b", "c"}
 
-    @pytest.fixture
-    def machine_m1(self):
-        """Return a minimal machine called."""
-        m1 = MooreDetMachine[int, str]()
-        m1.new_state_output("a")
-        m1.new_state_output("a")
-        m1.new_state_output("b")
-        m1.new_transition(0, 0, 1)
-        m1.new_transition(0, 1, 0)
-        m1.new_transition(1, 0, 2)
-        m1.new_transition(1, 1, 1)
-        m1.new_transition(2, 0, 0)
-        m1.new_transition(2, 1, 0)
-        m1.set_initial(0)
-        return m1
-
-    @pytest.fixture
-    def machine_m2(self):
-        """Return a redundant machine machine."""
-        m2 = MooreDetMachine[int, str]()
-        m2.new_state_output("a")
-        m2.new_state_output("a")
-        m2.new_state_output("b")
-        m2.new_state_output("a")
-        m2.new_state_output("a")
-        m2.new_state_output("b")
-        m2.new_transition(0, 0, 1)
-        m2.new_transition(0, 1, 0)
-        m2.new_transition(1, 0, 2)
-        m2.new_transition(1, 1, 1)
-        m2.new_transition(2, 0, 3)
-        m2.new_transition(2, 1, 3)
-        m2.new_transition(3, 0, 4)
-        m2.new_transition(3, 1, 3)
-        m2.new_transition(4, 0, 5)
-        m2.new_transition(4, 1, 4)
-        m2.new_transition(5, 0, 0)
-        m2.new_transition(5, 1, 0)
-        m2.set_initial(0)
-        return m2
-
-    def test_minimize(self, machine_m1: MachineT, machine_m2: MachineT):
+    def test_minimize(self, maker1: MakerT, maker2: MakerT):
         """Test minimization of the machine."""
         # Words to translate
         test_words = [
@@ -217,7 +224,7 @@ class TestMooreDetMachine:
         ]
 
         # Machine
-        m1 = machine_m1
+        m1 = maker1()
 
         # This should be the same machine
         m1_min = m1.minimize()
@@ -226,7 +233,7 @@ class TestMooreDetMachine:
             assert m1.process_word(word) == m1_min.process_word(word)
 
         # Redundant machine
-        m2 = machine_m2
+        m2 = maker2()
 
         # This should be as m1
         m2_min = m2.minimize()
@@ -249,8 +256,10 @@ class TestMooreDetMachine:
         for word in test_words:
             assert m3.process_word(word) == m3_min.process_word(word)
 
-    def test_bisimilar(self, machine_m1: MachineT, machine_m2: MachineT):
+    def test_bisimilar(self, maker1: MakerT, maker2: MakerT):
         """Test bisimulation."""
+        machine_m1 = maker1()
+        machine_m2 = maker2()
 
         assert machine_m1.is_equivalent(machine_m1)
 
@@ -269,19 +278,21 @@ class TestMooreDetMachine:
         assert not m2_min.is_equivalent(machine_m2)
         assert not machine_m2.is_equivalent(m2_min)
 
-    def test_eq(self, machine_m1: MachineT, machine_m2: MachineT):
+    def test_eq(self, maker1: MakerT, maker2: MakerT):
         """Test equality."""
+        m1 = maker1()
+        m2 = maker2()
+        m2_copy = maker2()
 
-        # TODO: copy of machine
         assert MooreDetMachine() == MooreDetMachine()
-        assert MooreDetMachine() != machine_m1
-        assert machine_m1 == machine_m1
-        assert machine_m1 != machine_m2
+        assert MooreDetMachine() != m1
+        assert m1 == m1
+        assert m1 != m2
 
-        assert machine_m2_copy is not machine_m2
-        assert machine_m2 == machine_m2_copy
-        machine_m2_copy.set_initial(1)
-        assert machine_m2 != machine_m2_copy
+        assert m2_copy is not m2
+        assert m2 == m2_copy
+        m2_copy.set_initial(1)
+        assert m2 != m2_copy
 
 
 # TODO
