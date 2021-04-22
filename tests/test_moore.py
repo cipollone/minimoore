@@ -13,51 +13,6 @@ MakerT = Callable[[], MachineT]
 class TestMooreDetMachine:
     """Test MooreDetMachine."""
 
-    @pytest.fixture
-    def maker1(self):
-        """On each call return a minimal machine."""
-        def make():
-            m1 = MooreDetMachine[int, str]()
-            m1.new_state_output("a")
-            m1.new_state_output("a")
-            m1.new_state_output("b")
-            m1.new_transition(0, 0, 1)
-            m1.new_transition(0, 1, 0)
-            m1.new_transition(1, 0, 2)
-            m1.new_transition(1, 1, 1)
-            m1.new_transition(2, 0, 0)
-            m1.new_transition(2, 1, 0)
-            m1.set_initial(0)
-            return m1
-        return make
-
-    @pytest.fixture
-    def maker2(self):
-        """On each call return a redundant machine."""
-        def make():
-            m2 = MooreDetMachine[int, str]()
-            m2.new_state_output("a")
-            m2.new_state_output("a")
-            m2.new_state_output("b")
-            m2.new_state_output("a")
-            m2.new_state_output("a")
-            m2.new_state_output("b")
-            m2.new_transition(0, 0, 1)
-            m2.new_transition(0, 1, 0)
-            m2.new_transition(1, 0, 2)
-            m2.new_transition(1, 1, 1)
-            m2.new_transition(2, 0, 3)
-            m2.new_transition(2, 1, 3)
-            m2.new_transition(3, 0, 4)
-            m2.new_transition(3, 1, 3)
-            m2.new_transition(4, 0, 5)
-            m2.new_transition(4, 1, 4)
-            m2.new_transition(5, 0, 0)
-            m2.new_transition(5, 1, 0)
-            m2.set_initial(0)
-            return m2
-        return make
-
     def test_empty(self):
         """Test initialization."""
         automaton = MooreDetMachine[str, str]()
@@ -295,15 +250,76 @@ class TestMooreDetMachine:
         assert m2 != m2_copy
 
 
-# TODO
 class TestBuilder:
     """Test MooreBuilder class."""
 
-    def m1(self) -> MooreDetMachine[int, int]:
-        """Create the machine m1 without builder."""
-        m = MooreDetMachine[int, int]()
-        m.new_state_output(10)
-        m.new_state_output(11)
+    def test_builder(
+        self, maker3: MakerT, maker3b: MakerT, maker1: MakerT, maker1b: MakerT
+    ):
+        """Compare machines."""
+        assert maker3() == maker3b()
+        assert maker1() == maker1b()
+
+
+@pytest.fixture
+def maker1():
+    """On each call return a minimal machine."""
+
+    def make():
+        m1 = MooreDetMachine[int, str]()
+        m1.new_state_output("a")
+        m1.new_state_output("a")
+        m1.new_state_output("b")
+        m1.new_transition(0, 0, 1)
+        m1.new_transition(0, 1, 0)
+        m1.new_transition(1, 0, 2)
+        m1.new_transition(1, 1, 1)
+        m1.new_transition(2, 0, 0)
+        m1.new_transition(2, 1, 0)
+        m1.set_initial(0)
+        return m1
+
+    return make
+
+
+@pytest.fixture
+def maker2():
+    """On each call return a redundant machine."""
+
+    def make():
+        m2 = MooreDetMachine[int, str]()
+        m2.new_state_output("a")
+        m2.new_state_output("a")
+        m2.new_state_output("b")
+        m2.new_state_output("a")
+        m2.new_state_output("a")
+        m2.new_state_output("b")
+        m2.new_transition(0, 0, 1)
+        m2.new_transition(0, 1, 0)
+        m2.new_transition(1, 0, 2)
+        m2.new_transition(1, 1, 1)
+        m2.new_transition(2, 0, 3)
+        m2.new_transition(2, 1, 3)
+        m2.new_transition(3, 0, 4)
+        m2.new_transition(3, 1, 3)
+        m2.new_transition(4, 0, 5)
+        m2.new_transition(4, 1, 4)
+        m2.new_transition(5, 0, 0)
+        m2.new_transition(5, 1, 0)
+        m2.set_initial(0)
+        return m2
+
+    return make
+
+
+@pytest.fixture
+def maker3() -> MakerT:
+    """On call, create a machine without builder."""
+
+    def make():
+        m = MooreDetMachine[int, str]()
+        m.new_state_output("first")
+        m.new_state_output("second")
         m.set_initial(0)
         m.new_transition(0, 0, 0)
         m.new_transition(0, 1, 1)
@@ -311,17 +327,31 @@ class TestBuilder:
         m.new_transition(1, 1, 1)
         return m
 
-    def m1_builder(self) -> MooreDetMachine[int, int]:
-        """Create a machine with the builder."""
-        builder = MooreBuilder[int, int]()
-        (builder.state("init").init().output(10)
-            .to(0, "init")
-            .to(1, "s1"))
-        (builder.state("s1").output(11)
-            .to(0, "init")
-            .to(1, "s1"))
+    return make
 
+
+@pytest.fixture
+def maker3b() -> MakerT:
+    """Create a machine with the builder."""
+
+    def make():
+        builder = MooreBuilder[int, str]()
+        (builder.state("init").init().output("first").to(0, "init").to(1, "s1"))
+        (builder.state("s1").output("second").to(0, "init").to(1, "s1"))
         return builder.machine
 
-    #def test_builder(self, m1, m1_builder):
-        #"""Compare machines."""
+    return make
+
+
+@pytest.fixture
+def maker1b() -> MakerT:
+    """Create a machine as m1."""
+
+    def make():
+        builder = MooreBuilder[int, str]()
+        (builder.state("s0").init().output("a").to(0, "s1").to(1, "s0"))
+        (builder.state("s1").output("a").to(0, "s2").to(1, "s1"))
+        (builder.state("s2").output("b").to(0, "s0").to(1, "s0"))
+        return builder.machine
+
+    return make
