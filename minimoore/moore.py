@@ -1,8 +1,21 @@
 """Moore machine."""
 
+from __future__ import annotations
+
 import functools
 from pathlib import Path
-from typing import AbstractSet, Dict, FrozenSet, Iterable, Optional, Set, Tuple
+from typing import (
+    AbstractSet,
+    Dict,
+    FrozenSet,
+    Generic,
+    Hashable,
+    Iterable,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+)
 
 from graphviz import Digraph  # type: ignore
 
@@ -16,6 +29,9 @@ from minimoore.transducers import (
 )
 
 # Types
+SInputSymT = TypeVar("SInputSymT", bound=Hashable)
+SOutputSymT = TypeVar("SOutputSymT", bound=Hashable)
+StateIdT = Hashable
 SplitterT = Tuple[AbstractSet[StateT], InputSymT]
 
 
@@ -400,3 +416,102 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
                     continue
 
         return not_bisimilar
+
+    def __eq__(self, other) -> bool:
+        """Compare two objects.
+
+        This tests if the two graphs are the same. For input-output equivalence
+        see is_equivalent method.
+        """
+        # Sufficient conditions
+        if self is other:
+            return True
+        if not super().__eq__(other):
+            return False
+
+        # Additional constraint
+        return self.__output_table == other.__output_table
+
+
+class MooreBuilder(Generic[InputSymT, OutputSymT]):
+    """Helper class to create MooreDetMachine.
+
+    With this class you can instantiate a MooreDetMachine with a shorter
+    notation. Once built, the machine can be read from `machine` or by calling
+    this object.
+
+    This class allows to use chains of commands. It all starts with
+    a state(), that declare the starting state. Then, we can
+    add arcs leaving from that state, defining the associated output,
+    or making it initial. You can use any hashable type to refer to a
+    state. Any new state is implicitly declared.
+
+    For example:
+
+        builder = MooreBuilder()
+        builder.state("init")
+               .to("in1", "state2")
+               .to("in2", "init")
+               .init()
+               .output(3)
+
+    Defines a machine with two states, two arcs from "init", which is also
+    the initial state, with output 3. The output of "state2" is not declared
+    yet.
+    """
+
+    def __init__(self):
+        """Initializes an empty machine."""
+        self.machine = MooreDetMachine[InputSymT, OutputSymT]()
+        self.__states_map: Dict[
+            StateIdT, MooreBuilder.State[InputSymT, OutputSymT]
+        ] = dict()
+
+    def state(self, state_id: StateIdT) -> MooreBuilder.State[InputSymT, OutputSymT]:
+        """Get the state associated with this id, create it if not declared."""
+        bstate = self.__states_map.get(state_id)
+        if bstate is None:
+            state = self.machine.new_state()
+            bstate = self.State(state, self)
+            self.__states_map[state_id] = bstate
+        return bstate
+
+    class State(Generic[SInputSymT, SOutputSymT]):
+        """Class that represent a state and its operations."""
+
+        def __init__(
+            self,
+            state: StateT,
+            builder: MooreBuilder[SInputSymT, SOutputSymT],
+        ):
+            """Initialize.
+
+            :param state: the state this object represent.
+            :param builder: the builder object that created this state.
+            """
+            self.state = state
+            self.builder = builder
+            self.machine = self.builder.machine
+
+        def init(self) -> MooreBuilder.State[SInputSymT, SOutputSymT]:
+            """Set this as initial state."""
+            self.machine.set_initial(self.state)
+            return self
+
+        def output(
+            self,
+            output: SOutputSymT,
+        ) -> MooreBuilder.State[SInputSymT, SOutputSymT]:
+            """Set the output for this state."""
+            self.machine.set_state_output(self.state, output)
+            return self
+
+        def to(
+            self,
+            symbol: SInputSymT,
+            successor: StateIdT,
+        ) -> MooreBuilder.State[SInputSymT, SOutputSymT]:
+            """Create an arc leaving this state."""
+            bstate_succ = self.builder.state(successor)
+            self.machine.new_transition(self.state, symbol, bstate_succ.state)
+            return self

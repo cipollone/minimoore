@@ -1,11 +1,11 @@
 """Interfaces for finite transducers."""
 
 from abc import ABC, abstractmethod
-from typing import Generic, Iterable, Optional, Sequence, Set, Tuple, TypeVar
+from typing import Generic, Hashable, Iterable, Optional, Sequence, Set, Tuple, TypeVar
 
 # Types
-InputSymT = TypeVar("InputSymT")
-OutputSymT = TypeVar("OutputSymT")
+InputSymT = TypeVar("InputSymT", bound=Hashable)
+OutputSymT = TypeVar("OutputSymT", bound=Hashable)
 StateT = int
 StatesT = Set[StateT]
 TransitionT = Tuple[StateT, InputSymT, StateT]
@@ -21,6 +21,33 @@ class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
         """Initialize an empty transducer."""
         self.n_states = 0
         self.init_states = set()
+
+    def __eq__(self, other) -> bool:
+        """Test for equality.
+
+        Compare two objects. This returns true only if the members are the
+        same. Call this in subclasses.
+        """
+        if other is None:
+            return False
+        if self is other:
+            return True
+        if not isinstance(other, FiniteTransducer):
+            return False
+
+        # Check fields
+        if self.n_states != other.n_states:
+            return False
+        if self.init_states != other.init_states:
+            return False
+        if set(self.input_alphabet) != set(other.input_alphabet):
+            return False
+        if set(self.output_alphabet) != set(other.output_alphabet):
+            return False
+        if set(self.transitions) != set(other.transitions):
+            return False
+
+        return True
 
     def new_state(self) -> StateT:
         """Create a new state and return the id."""
