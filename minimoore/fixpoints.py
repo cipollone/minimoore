@@ -1,9 +1,9 @@
 """Implementation of fixpoint algorithms for functions on sets."""
 
-from typing import AbstractSet, Callable, Generic, Optional, Set, TypeVar
+from typing import AbstractSet, Callable, Generic, Hashable, Optional, Set, TypeVar
 
 # Types
-ElementType = TypeVar("ElementType")
+ElementType = TypeVar("ElementType", bound=Hashable)
 FunctionType = Callable[[Set[ElementType]], Set[ElementType]]
 AFunctionType = Callable[[AbstractSet[ElementType]], AbstractSet[ElementType]]
 StopConditionType = Callable[[AbstractSet[ElementType]], bool]

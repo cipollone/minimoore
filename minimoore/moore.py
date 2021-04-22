@@ -29,8 +29,8 @@ from minimoore.transducers import (
 )
 
 # Types
-SInputSymT = TypeVar("SInputSymT")
-SOutputSymT = TypeVar("SOutputSymT")
+SInputSymT = TypeVar("SInputSymT", bound=Hashable)
+SOutputSymT = TypeVar("SOutputSymT", bound=Hashable)
 StateIdT = Hashable
 SplitterT = Tuple[AbstractSet[StateT], InputSymT]
 

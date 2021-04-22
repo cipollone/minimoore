@@ -1,12 +1,11 @@
 """Interfaces for finite transducers."""
 
 from abc import ABC, abstractmethod
-from typing import Generic, Iterable, Optional, Sequence, Set, Tuple, TypeVar
+from typing import Generic, Hashable, Iterable, Optional, Sequence, Set, Tuple, TypeVar
 
 # Types
-# TODO: make all typevar hashable
-InputSymT = TypeVar("InputSymT")
-OutputSymT = TypeVar("OutputSymT")
+InputSymT = TypeVar("InputSymT", bound=Hashable)
+OutputSymT = TypeVar("OutputSymT", bound=Hashable)
 StateT = int
 StatesT = Set[StateT]
 TransitionT = Tuple[StateT, InputSymT, StateT]
