@@ -123,6 +123,17 @@ class FiniteTransducer(Generic[InputSymT, OutputSymT], ABC):
         """Save a graph to out_path using graphviz."""
         raise NotImplementedError("Should be overridden in subclasses")
 
+    def is_complete(self) -> bool:
+        """Check if this machine is complete.
+
+        :return: true if all inputs are applicable in every state.
+        """
+        in_aphabet = set(self.input_alphabet)
+        for s in self.states:
+            if len(self.arcs_from(s)) < len(in_aphabet):
+                return False
+        return True
+
 
 class FiniteDetTransducer(FiniteTransducer[InputSymT, OutputSymT]):
     """A deterministic finite transducer."""

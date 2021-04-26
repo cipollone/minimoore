@@ -72,6 +72,12 @@ class TestMooreDetMachine:
         ret = m.process_word(in_word, strict=False)
         assert " ".join(ret) == "a long"
 
+        # Change a transition
+        m.new_transition(0, "in1", 2)
+        in_word = ["in1", "in3"]
+        ret = m.process_word(in_word)
+        assert " ".join(ret) == "a word"
+
     def test_iteration(self):
         """Test iterations."""
         m = MooreDetMachine[str, str]()
@@ -248,6 +254,68 @@ class TestMooreDetMachine:
         assert m2 == m2_copy
         m2_copy.set_initial(1)
         assert m2 != m2_copy
+
+    def test_is_complete(self, maker1: MakerT, maker2: MakerT):
+        """Test is_complete check."""
+
+        m1 = maker1()
+        m2 = maker2()
+
+        assert m1.is_complete()
+        assert m2.is_complete()
+        m1.new_state()
+        s2 = m2.new_state()
+        m2.new_transition(s2, 0, s2)
+        assert not m1.is_complete()
+        assert not m2.is_complete()
+
+    def test_complete_sink(self, maker1: MakerT, maker2: MakerT):
+        """Test complete_sink function."""
+
+        m1 = maker1()
+        m2 = maker2()
+
+        # Already complete
+        assert m1.complete_sink("eps") is None
+        assert m2.complete_sink("eps") is None
+
+        # Make not complete
+        s1 = m1.new_state_output("c")
+        m1.new_transition(2, 0, s1)
+
+        s2 = m2.new_state_output("c")
+        m2.new_transition(0, 0, s2)
+
+        # Input
+        in_word = [0 for i in range(5)]
+
+        # Not complete
+        with pytest.raises(ValueError):
+            m1.process_word(in_word)
+        with pytest.raises(ValueError):
+            m2.process_word(in_word)
+
+        # Complete
+        m1.complete_sink("err")
+        m2.complete_sink("err")
+
+        # Test sink
+        out1 = m1.process_word(in_word)
+        out2 = m2.process_word(in_word)
+
+        out1_expected = "a a b c err"
+        out2_expected = "a c err err err"
+
+        assert " ".join(out1) == out1_expected
+        assert " ".join(out2) == out2_expected
+
+        # Test idempotent
+        m1 = maker1()
+        m2 = maker2()
+        assert m1.complete_sink("err") is None
+        assert m2.complete_sink("err") is None
+        assert m1 == maker1()
+        assert m2 == maker2()
 
 
 class TestBuilder:

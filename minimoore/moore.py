@@ -47,6 +47,7 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         self.__transitions: Dict[StateT, Dict[InputSymT, TransitionT]] = dict()
         self.__input_symbols: Set[InputSymT] = set()
         self.__output_symbols: Set[OutputSymT] = set()
+        self.__sink: Optional[StateT] = None
 
     def _register_state(self, state: StateT):
         """Ops on the new state."""
@@ -431,6 +432,33 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
 
         # Additional constraint
         return self.__output_table == other.__output_table
+
+    def complete_sink(self, output: OutputSymT) -> Optional[StateT]:
+        """Completes the transitions with a sink state.
+
+        This function replaces all the missing transitions with a transition
+        to a new sink state. From that state any input remains to the sink
+        state. If the automaton is already complete, the sink state is not
+        created.
+
+        :param output: this is the output associated to the sink state.
+        :return: the current sink state id, if it exists.
+        """
+        # Nothing to do
+        if self.is_complete():
+            return self.__sink
+
+        # Create sink
+        self.__sink = self.new_state_output(output)
+
+        # Connect all
+        for state in self.states:
+            state_inputs = self.arcs_from(state)
+            for sym in self.input_alphabet:
+                if sym not in state_inputs:
+                    self.new_transition(state, sym, self.__sink)
+
+        return self.__sink
 
 
 class MooreBuilder(Generic[InputSymT, OutputSymT]):
