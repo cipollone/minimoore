@@ -19,9 +19,9 @@ Then, `import minimoore` in your project.
 
 A transducer can be instantiated with methods of the specific transducer class, or via a builder. This is the syntax of the builder for Moore machines:
 
-  builder = MooreBuilder[int, str]()
-  (builder.state("s0").init().output("a").to(0, "s1").to(1, "s0"))
-  (builder.state("s1").output("a").to(0, "any-name").to(1, "s1"))
-  (builder.state("any-name").output("b").to(0, "s0").to(1, "s0"))
+    builder = MooreBuilder[int, str]()
+    (builder.state("s0").init().output("a").to(0, "s1").to(1, "s0"))
+    (builder.state("s1").output("a").to(0, "any-name").to(1, "s1"))
+    (builder.state("any-name").output("b").to(0, "s0").to(1, "s0"))
 
 We can now get `builder.machine`, use it or save it to a Dot file. Moore machines can be minimized, completed (more to add later).
