@@ -89,6 +89,12 @@ class MooreDetMachine(FiniteDetTransducer[InputSymT, OutputSymT]):
         assert output is not None, f"Output not assigned for state {state}"
         return output
 
+    def complete_outputs(self, output: OutputSymT):
+        """Assign an output to states which have not been specificed."""
+        for state in self.states:
+            if self.__output_table.get(state, None) is None:
+                self.set_state_output(state, output)
+
     def arcs_from(self, state: StateT) -> Set[InputSymT]:
         """Return the set of input symbols that can be read from a state."""
         return set(self.__transitions[state].keys())
